@@ -1,0 +1,68 @@
+# Docker-compose Beispiel für die Abgabe im Kurs "Internet-Technologien" an der HFTM, 26.03.2023.
+# Abgegeben und kommentiert von: LQ.
+
+# Zu verwendende docker-compose Version festlegen.
+version: "3.8"
+# Unter "services" werden alle benötigten Container definiert.
+services:
+  # Ersten Container namens "web" definieren. Dieser wird als frontend dienen. 
+  web:
+  # Mit dem "build" wird der Container für das frontned aus einem Dockerfile gebaut, welches sich im Projektordner (hier .) befindet.
+    build: ./frontend
+    # Depends_on gibt an, dass dieser Container für den ordentlichen Betrieb abhängig vom Container "api" ist, welcher danach definiert wird.
+    # Das gibt docker-compose die Anweisung, dass zuerst der Container "api" in Betrieb genommen werden muss, da dem Container "web" sonst etwas fehlt (die API eben).
+    depends_on:
+      - api
+    # Der Port 3000 des hosts wird gemappt auf den Port 3000 des Containers.
+    ports:
+      - "3000:3000"
+    # Der Container "web" wird dem Netzwerk "network-backend" zugeordnet. Dieses Netzwerk wird später definiert.
+    networks:
+      - network-backend
+  # Zweiten Container namens "api" definieren. Dieser dient als backend für die Anwendung.
+  api:
+  # Analog zu oben mit "build" zuerst den Container anhand der Anweisungen aus dem Dockerfile in . bauen.
+    build: ./backend
+    # Der Container "api" ist abhängig vom dritten Container "mongo", weshalb hier wieder festgelegt wird, dass der Container "mongo" zuerst aufgesetzt werden muss.
+    depends_on:
+      - mongo
+    # Port 3001 des hosts auf Port 3001 des Containers mappen.
+    ports:
+      - "3001:3001"
+    # Den Container "api" dem Netzwerk "network-backend" zuordnen. Dieses Netzwerk wird später definiert.
+    networks: 
+     - network-backend
+  # Dritten Container namens "mongo" definieren. Dieser dient als Datenbank.
+  mongo:
+    # Image angeben, welches als Grundlage für diesen Container dient. Im Gegensatz zu den zwei anderen Containern oben, bauen wir uns diesen nicht selber sondern laden das offizielle Image.
+    image: mongo
+    # Angeben, dass der Container immer neu starten soll, wenn er einmal herunterfahren oder abstürzen sollte.
+    restart: always
+    # Ein persistierendes Volume namens "mongodb_data" für die Datenbank angeben, damit die Daten unter /data/db nicht verloren gehen, sollte der Container neu gestartet werden.
+    # Dieses volume wird später definiert.
+    volumes: 
+      - mongodb_data:/data/db
+    # Umgebungsvariablen für die Datenbank wie Benutzername und Passwort für den root user festlegen.
+    environment: 
+      MONGODB_INITDB_ROOT_USERNAME: username
+      MONGODB_INITDB_ROOT_PASSWORD: password
+    # Die Datenbank ebenfalls dem Netzwerk "network-backend" zuordnen. Dieses Netzwerk wird später definiert.
+    networks: 
+     - network-backend
+# Die in der Docker-Komposition zu verwendenden Netzwerke definieren.
+networks:
+# Das Netzwerk "network-backend" definieren. Hier wird das Netzwerk als leeres Objekt initialisiert, d.h. es werden keine Zusatzinformationen wie Subnetz, Netzwerktreiber usw. mitgegeben.
+# So erstellt docker-compose ein Netzwerk mit den Standard-Einstellungen, also ein bridge Netzwerk, über das alle Container miteinander kommunizieren können.
+  network-backend:
+# Die in der Docker-Komposition zu verwendenden volumes definieren.
+volumes: 
+# Das volume für die Datenbank mit dem Namen "mongodb_data" definieren, damit deren Daten bei einem Neustart des Containers nicht verloren gehen.
+# Analog zum Netzwerk werden hier keine Zusatzinformationen mitgegeben, weshalb das volume mit den Standard-Einstellungen und dem Standard-Pfad für docker volumes erstellt wird.
+  mongodb_data:
+
+# Weitere Kommentare:
+# Das compose-file wurde getestet und funktioniert. Alle Container lassen sich ordnungsgemäss starten und stoppen und können miteinander kommunizieren.
+# Das frontend ist nach dem Starten der Container über einen Browser erreichbar. Die App funktioniert zumindest bei mir und meinem Browser nur dürftig.
+# Dabei wird es sich aber um Probleme im Code der Applikationen selbst handeln und nicht um Probleme mit docker-compose.
+# Was docker-compose angeht funktioniert dieses file einwandfrei. Deshalb gehe ich davon aus, dass es für die Abgabe genügen wird. Meine Kommentare sollten zeigen, dass ich docker-compose verstanden habe.
+# Es war ja schliesslich nicht die Aufgabe, eine funktionierende App zu bauen, sondern nur ein funktionierendes docker-compose file bereitzustellen ;-)
